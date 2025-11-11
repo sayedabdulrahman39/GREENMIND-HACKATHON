@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GreenMind Cam Dashboard</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">🌱 CONFLAGRATIONX</div>
+      <p class="tagline">Realtime people detection & light monitor</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="snapshot-box">
+          <img id="snap" src="http://127.0.0.1:8000/snapshot" alt="snapshot" />
+          <div class="note">Snapshot auto-refreshes every 2s</div>
+        </div>
+
+        <div class="info">
+          <div class="stat">
+            <span class="label">People</span>
+            <span id="people" class="value">-</span>
+          </div>
+          <div class="stat">
+            <span class="label">Brightness</span>
+            <span id="bright" class="value">-</span>
+          </div>
+          <div class="stat">
+            <span class="label">Light</span>
+            <span id="light" class="value">-</span>
+          </div>
+
+          <div class="status-box">
+            <span id="status" class="status">checking...</span>
+          </div>
+
+          <div class="links">
+            <p><b>Last alert image:</b> <a id="alertUrl" href="#" target="_blank">none</a></p>
+          </div>
+
+          <p id="error" class="error"></p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2025 GreenMind | Local demo interface</p>
+    </footer>
+
+    <script>
+      const API = "http://127.0.0.1:8000";
+
+      async function tick() {
+        try {
+          const res = await fetch(API + "/status");
+          const data = await res.json();
+
+          document.getElementById("people").textContent = data.people_count ?? "-";
+          document.getElementById("bright").textContent = data.brightness ?? "-";
+          document.getElementById("light").textContent = data.light_on ? "ON" : "OFF";
+
+          const statusEl = document.getElementById("status");
+          if (data.alert_ready || (data.light_on && data.people_count === 0)) {
+            statusEl.textContent = "⚠️ You forgot something!";
+            statusEl.className = "status warn";
+          } else {
+            statusEl.textContent = "✅ All good";
+            statusEl.className = "status ok";
+          }
+
+          const a = document.getElementById("alertUrl");
+          a.textContent = data.last_alert_image_url ? "view" : "none";
+          a.href = data.last_alert_image_url || "#";
+
+          document.getElementById("error").textContent = data.last_error || "";
+        } catch (e) {
+          document.getElementById("error").textContent = "❌ " + e.toString();
+        }
+
+        // refresh snapshot (avoid cache)
+        const img = document.getElementById("snap");
+        img.src = API + "/snapshot?t=" + Date.now();
+      }
+
+      setInterval(tick, 2000);
+      tick();
+    </script>
+  </body>
+</html>
